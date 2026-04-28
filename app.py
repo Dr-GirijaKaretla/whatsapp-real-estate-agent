@@ -58,6 +58,29 @@ def health() -> Response:
     return {"status": "ok", "service": "whatsapp-real-estate-agent", "workers": _MAX_WORKERS}, 200
 
 
+@app.route("/seed", methods=["GET"])
+def seed() -> Response:
+    """Load sample properties into the database. Visit once after deployment."""
+    from seed import seed_database
+    result = seed_database()
+    return {"message": result}, 200
+
+
+@app.route("/properties", methods=["GET"])
+def list_properties() -> Response:
+    """Quick view of all active properties — for verification only."""
+    db = SessionLocal()
+    try:
+        from database.models import Property
+        props = db.query(Property).filter(Property.is_active == True).all()
+        return {
+            "count": len(props),
+            "properties": [p.to_dict() for p in props]
+        }, 200
+    finally:
+        db.close()
+
+
 @app.route("/webhook/whatsapp", methods=["POST"])
 def whatsapp_webhook() -> Response:
     """
