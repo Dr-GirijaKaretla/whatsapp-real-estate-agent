@@ -20,12 +20,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from database import init_db, SessionLocal
-from agent import RealEstateAgent
-from services import WhatsAppService
-from services.rate_limiter import PerUserQueue
-from utils import validate_twilio_signature
-
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -33,10 +27,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+try:
+    from database import init_db, SessionLocal
+    from agent import RealEstateAgent
+    from services import WhatsAppService
+    from services.rate_limiter import PerUserQueue
+    from utils import validate_twilio_signature
+    logger.info("All modules imported successfully")
+except Exception as e:
+    logger.exception("STARTUP ERROR — failed to import modules: %s", e)
+    raise
+
 # ── App setup ─────────────────────────────────────────────────────────────────
 app = Flask(__name__)
 
-init_db()
+try:
+    init_db()
+    logger.info("Database initialised successfully")
+except Exception as e:
+    logger.exception("STARTUP ERROR — database init failed: %s", e)
+    raise
 
 _agent    = RealEstateAgent()
 _whatsapp = WhatsAppService()
