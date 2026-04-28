@@ -58,6 +58,41 @@ def health() -> Response:
     return {"status": "ok", "service": "whatsapp-real-estate-agent", "workers": _MAX_WORKERS}, 200
 
 
+@app.route("/status", methods=["GET"])
+def status() -> Response:
+    """Shows which credentials are set and which are missing. Open in browser to diagnose."""
+    def check(var):
+        val = os.environ.get(var, "")
+        return "✅ SET" if val else "❌ MISSING"
+
+    from database.models import Property
+    db = SessionLocal()
+    try:
+        prop_count = db.query(Property).count()
+    except Exception:
+        prop_count = "error"
+    finally:
+        db.close()
+
+    return {
+        "service": "WhatsApp Real Estate Agent",
+        "credentials": {
+            "ANTHROPIC_API_KEY":       check("ANTHROPIC_API_KEY"),
+            "TWILIO_ACCOUNT_SID":      check("TWILIO_ACCOUNT_SID"),
+            "TWILIO_AUTH_TOKEN":       check("TWILIO_AUTH_TOKEN"),
+            "TWILIO_WHATSAPP_NUMBER":  check("TWILIO_WHATSAPP_NUMBER"),
+        },
+        "config": {
+            "ADMIN_PHONES":  os.environ.get("ADMIN_PHONES", "❌ MISSING"),
+            "AGENCY_NAME":   os.environ.get("AGENCY_NAME",  "❌ MISSING"),
+            "MAX_WORKERS":   _MAX_WORKERS,
+        },
+        "database": {
+            "properties_loaded": prop_count,
+        },
+    }, 200
+
+
 @app.route("/seed", methods=["GET"])
 def seed() -> Response:
     """Load sample properties into the database. Visit once after deployment."""

@@ -32,8 +32,23 @@ _ADMIN_PHONES: set[str] = set(
 
 class RealEstateAgent:
     def __init__(self) -> None:
-        self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-        self.model = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
+        self._client = None
+        self.model   = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
+
+    def _ensure_client(self) -> None:
+        if self._client is not None:
+            return
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            raise RuntimeError(
+                "ANTHROPIC_API_KEY is not set. Add it to your Railway environment variables."
+            )
+        self._client = anthropic.Anthropic(api_key=api_key)
+
+    @property
+    def client(self):
+        self._ensure_client()
+        return self._client
 
         # Import handlers lazily to avoid circular imports at module load time
         from handlers.property import PropertyHandler
